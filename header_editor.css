@@ -1,0 +1,57 @@
+.dt-header-editor-cell-sel {
+  background-color: grey !important;
+}
+
+.dt-header-editor-delete-row {
+	width: 22px;
+  height: 22px;
+  background-image: url("images/delete_row.png");
+}
+
+.dt-header-editor-insert-row {
+	width: 22px;
+  height: 22px;
+  background-image: url("images/insert_row.png");
+}
+
+.dt-header-editor-insert-row-after {
+	width: 22px;
+  height: 22px;
+  background-image: url("images/insert_row_after.png");
+}
+
+.dt-header-editor-insert-row-before {
+	width: 22px;
+  height: 22px;
+  background-image: url("images/insert_row_before.png");
+}
+
+.dt-header-editor-join-above {
+	width: 22px;
+  height: 22px;
+  background-image: url("images/join_above.png");
+}
+
+.dt-header-editor-join-below {
+	width: 22px;
+  height: 22px;
+  background-image: url("images/join_below.png");
+}
+
+.dt-header-editor-join-left {
+	width: 22px;
+  height: 22px;
+  background-image: url("images/join_left.png");
+}
+
+.dt-header-editor-join-right {
+	width: 22px;
+  height: 22px;
+  background-image: url("images/join_right.png");
+}
+
+.dt-header-editor-refresh {
+	width: 22px;
+  height: 22px;
+  background-image: url("images/refresh_24.png");
+}
