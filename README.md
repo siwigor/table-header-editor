@@ -1,4 +1,3 @@
-# table-header-editor
 # jQuery plugin - Editor for table header.
 
 ## Dependencies:
