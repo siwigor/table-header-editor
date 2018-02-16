@@ -7,7 +7,7 @@ Dependencies:
 
 Using:
 
-var options = { header: '<thead><tr><th>First name</th><th>Last name</th><th>Position</th><th>Office</th><th>Start date</th><th>Salary</th></tr></thead>',
+<code>var options = { header: '<thead><tr><th>First name</th><th>Last name</th><th>Position</th><th>Office</th><th>Start date</th><th>Salary</th></tr></thead>',
                 submit: function (container, header) {
                   console.log(header);
                 },
@@ -16,3 +16,4 @@ var options = { header: '<thead><tr><th>First name</th><th>Last name</th><th>Pos
                 }
               }
 var headerEditor = $('body').headerEditor(options);
+ </code>
