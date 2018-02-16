@@ -1,13 +1,13 @@
 # table-header-editor
-jQuery plugin - Editor for table header.
+#jQuery plugin - Editor for table header.
 
-Dependencies:
- jQuery
- jQuery-UI
+##Dependencies:
+ ###jQuery
+ ###jQuery-UI
 
-Using:
-
-<code>var options = { header: '<thead><tr><th>First name</th><th>Last name</th><th>Position</th><th>Office</th><th>Start date</th><th>Salary</th></tr></thead>',
+##Using:
+```
+var options = { header: '<thead><tr><th>First name</th><th>Last name</th><th>Position</th><th>Office</th><th>Start date</th><th>Salary</th></tr></thead>',
                 submit: function (container, header) {
                   console.log(header);
                 },
@@ -16,4 +16,4 @@ Using:
                 }
               }
 var headerEditor = $('body').headerEditor(options);
- </code>
+```
