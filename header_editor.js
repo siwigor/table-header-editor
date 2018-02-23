@@ -3,7 +3,7 @@
   $.headerEditor = {
     defaults: {
       title: 'Header Editor',
-      tmpl: '<div id="dt_header_editor" dt="editor" title="Header Editor">\n'+
+      tmpl: '<div id="dt_header_editor" class="dt-header-editor" dt="editor" title="Header Editor">\n'+
             '  <button dt="ins_before" type="button" class="dt-header-editor-insert-row-before" title="Insert row before"></button>\n'+
             '  <button dt="ins_after" type="button" class="dt-header-editor-insert-row-after" title="Insert row After"></button>&nbsp;&nbsp;\n'+
             '  <button dt="join_right" type="button" class="dt-header-editor-join-right" title="Join right"></button>\n'+
@@ -11,11 +11,12 @@
             '  <button dt="join_above" type="button" class="dt-header-editor-join-above" title="Join above"></button>\n'+
             '  <button dt="join_below" type="button" class="dt-header-editor-join-below" title="Join below"></button>&nbsp;&nbsp;\n'+
             '  <button dt="remove" type="button" class="dt-header-editor-delete-row" title="Delete row"></button>&nbsp;&nbsp;\n'+
-            '  <button dt="refresh" type="button" class="dt-header-editor-refresh" title="Refresh"></button><br><br>\n'+
-            '  <table dt="table" width="100%" border="1" cellspacing="0">\n'+
-            '  </table>\n'+
+            '  <button dt="refresh" type="button" class="dt-header-editor-refresh" title="Refresh"></button><br>\n'+
             '</div>',
+      header_tmpl: '<br>Header<br><table dt="table_header" width="100%" border="1" cellspacing="0"></table>', 
+      footer_tmpl: '<br>Footer<br><table dt="table_footer" width="100%" border="1" cellspacing="0"></table>',
       header: '',
+      footer: '',
       submit: function () {
       },
       cancel: function () {
@@ -27,17 +28,14 @@
         this.headerEditor.dialog("open");
         return this.headerEditor;
       }
-      if (!options.header) {
-        return;
-      }
       var self = this;
       this.options = $.extend({}, this.defaults, options);
       this.container = container;
       this.create();
-      this.initEditor();
       this.headerEditor.dialog({ autoOpen: true,
                                  modal: true,
-                                 width: 640,
+                                 width: 1000,
+																 height: 350,
                                  buttons: [ { text: "Cancel",
                                               click: function() {
                                                $( this ).dialog( "close" );
@@ -58,23 +56,61 @@
       return this.headerEditor;
     },
         
-    initEditor: function () {
-      this.headerEditor.find('table tr th').quickEdit({
-        blur: false,
-        checkold: true,
-        space: false,
-        maxLength: 50,
-        showbtn: false,
-        submit: function (dom, newValue) {
-          dom.text(newValue);
-        }
+    initEditorEvent: function () {
+      this.headerEditor.off('.dth_cell_editor');
+      this.headerEditor.on('dblclick.dth_cell_editor', 'table tr th', function () {
+        var value = $(this).text();
+        var width = $(this).width();
+        $(this).addClass('dth-editing-cell')
+        $(this).html('<input id="dth_cell_editor" class="dth-cell-editor" size="' + Math.round(width/8).toString() + '" type="text" value="' + value + '">');
+        $(this).width(width);
+        $('#dth_cell_editor').on('keyup.dth_cell_editor keypress.dth_cell_editor focus.dth_cell_editor blur.dth_cell_editor change.dth_cell_editor', function( event ) {
+          var edit = $(this);
+          edit.width(parseInt((edit.val().length + 3) * 8));
+        });
       });
     },
     
     create: function () {
       var headerEditor = $(this.options.tmpl).eq(0);
-      headerEditor.find("table").html(this.options.header);
-      headerEditor.appendTo(this.container);
+      headerEditor.attr('title',this.options.title);
+      if (this.options.header || this.options.footer) {
+        if (this.options.header) {
+          headerEditor.append(this.options.header_tmpl);
+          headerEditor.find("table[dt='table_header']").html('<thead>' + this.options.header + '</thead>');
+        }
+        if (this.options.footer) {
+          headerEditor.append(this.options.footer_tmpl);
+          headerEditor.find("table[dt='table_footer']").html('<tfoot>' + this.options.footer + '</tfoot>');
+        }
+      } else {
+        if ($.fn.DataTable && $.fn.DataTable.isDataTable(this.container)) {
+          var table = $(this.container).DataTable();
+          var header = $(table.table().header()).clone();
+          if (header.length) {
+            header.find('*').removeAttr('class style role aria-label aria-controls aria-sort tabindex');
+            header.filter(':not(table, thead, tfoot, tr, th)').remove();
+            header.find("th[rowspan='1']").removeAttr('rowspan');
+            header.find("th[colspan='1']").removeAttr('colspan');
+            this.options.header = header.html().replace(/\r\n|\n|\t/g,'').replace(/\s\s+/g,' ').trim();
+            console.log(this.options.header);
+            headerEditor.append(this.options.header_tmpl);
+            headerEditor.find("table[dt='table_header']").append(header);
+          }
+          var footer = $(table.table().footer()).clone();
+          if (footer.length) {
+            footer.find('*').removeAttr('class style role aria-label aria-controls aria-sort tabindex');
+            footer.filter(':not(table, thead, tfoot, tr, th)').remove();
+            footer.find("th[rowspan='1']").removeAttr('rowspan');
+            footer.find("th[colspan='1']").removeAttr('colspan');
+            this.options.footer = footer.html().replace(/\r\n|\n|\t/g,'').replace(/\s\s+/g,' ').trim();
+            console.log(this.options.footer);
+            headerEditor.append(this.options.footer_tmpl);
+            headerEditor.find("table[dt='table_footer']").append(footer);
+          }
+        }
+      }
+      headerEditor.insertAfter(this.container);
       this.headerEditor = headerEditor;
     },
     
@@ -100,12 +136,19 @@
     submit: function () {
       var self = this,
           options = self.options;
-      self.headerEditor.find('table').find('*').removeAttr('class style');
+      self.headerEditor.find('table').find('*').removeAttr('class style role aria-label aria-controls aria-sort tabindex');
       self.headerEditor.find('table').find('*').filter(':not(table, thead, tfoot, tr, th)').remove();
-      var newvalue = self.headerEditor.find('table').html();
-      if (newvalue != options.header) {
+      var header = '';
+      if (self.headerEditor.find("table[dt='table_header'] thead").length) {
+        header = self.headerEditor.find("table[dt='table_header'] thead").html().replace(/\r\n|\n|\t/g,'').replace(/\s\s+/g,' ').trim();
+      }
+      var footer = '';
+      if (self.headerEditor.find("table[dt='table_footer'] tfoot").length) {
+        footer = self.headerEditor.find("table[dt='table_footer'] tfoot").html().replace(/\r\n|\n|\t/g,'').replace(/\s\s+/g,' ').trim();
+      }
+      if (header != options.header || footer != options.footer) {
         if ($.isFunction(options.submit)) {
-          if (options.submit(self.container, newvalue) !== false) {
+          if (options.submit(self.container, header, footer) !== false) {
             self.cancel(true);
           }
         }
@@ -145,7 +188,7 @@
       
       scope.on('click.dt', "button[dt='refresh']", function() {
         scope.find("table").html(self.options.header);
-        self.initEditor();
+        self.initEditorEvent();
       });
       
       scope.on('click.dt', "button[dt='ins_before']", function() {
@@ -153,7 +196,7 @@
         var new_row = self.newRow(sel_row.prev());
         var height = sel_row.height();
         new_row.insertBefore(sel_row).addClass('dt-header-editor-add-row').height(height);
-        self.initEditor();
+        self.initEditorEvent();
       });
 
       scope.on('click.dt', "button[dt='ins_after']", function() {
@@ -161,12 +204,12 @@
         var new_row = self.newRow(sel_row.next());
         var height = sel_row.height();
         new_row.insertAfter(sel_row).addClass('dt-header-editor-add-row').height(height);
-        self.initEditor();
+        self.initEditorEvent();
       });
 
       scope.on('click.dt', "button[dt='remove']", function() {
         scope.find('th.dt-header-editor-cell-sel').closest('tr.dt-header-editor-add-row').remove();
-        self.initEditor();
+        self.initEditorEvent();
       });
 
       scope.on('click.dt', "button[dt='join_right']", function() {
@@ -199,7 +242,7 @@
         var col = cell_pos.left;
         var rowspan = (sel_cell.attr('rowspan'))?parseInt(sel_cell.attr('rowspan')):1;
         if (sel_row.prev().length > 0) {
-          var prev_cell = $(sel_row.prev().children()[col]);
+          var prev_cell = $(sel_row.prev().children().filter(function(index, element) { return $(this).cellPos().left == col; })[0]);
           var prev_rowspan = (prev_cell.attr('rowspan'))?parseInt(prev_cell.attr('rowspan')):1;
           if (sel_cell.text())
             prev_cell.text(sel_cell.text());  
@@ -216,7 +259,7 @@
         var col = cell_pos.left;
         var rowspan = (sel_cell.attr('rowspan'))?parseInt(sel_cell.attr('rowspan')):1;
         if (sel_row.next().length > 0) {
-          var next_cell = $($(sel_row.nextAll()[rowspan-1]).children()[col]);
+          var next_cell = $($(sel_row.nextAll()[rowspan-1]).children().filter(function(index, element) { return $(this).cellPos().left == col; })[0]);
           var next_rowspan = (next_cell.attr('rowspan'))?parseInt(next_cell.attr('rowspan')):1;
           if (next_cell.text())
             sel_cell.text(next_cell.text());  
@@ -225,6 +268,21 @@
         }
       });
       
+      self.initEditorEvent();
+      
+      $(document).on('click.dth_cell_editor', function (e) {
+        if (e.target == $('th.dth-editing-cell').get(0) || $(e.target).is($('#dth_cell_editor'))) {
+          return;
+        }
+        if ($('#dth_cell_editor').length) {
+          var value = $('#dth_cell_editor').val();
+          $('#dth_cell_editor').off('.dth_cell_editor');
+          $('#dth_cell_editor').remove();
+          $('th.dth-editing-cell').text(value);
+          $('th.dth-editing-cell').removeClass('dth-editing-cell');
+        }
+      });
+   
       scope.dialog('widget').on('click.dt', 'button.ui-dialog-titlebar-close', function (e) {
         self.cancel();
         e.stopPropagation();
@@ -238,174 +296,7 @@
   };
 })(jQuery);
 
-(function ($) {
-    $.quickEdit = {
-        defaults: {
-            prefix: '[qe=?]',
-            oldvalue: '', 
-            blur: false, 
-            autosubmit: true, 
-            checkold: true, 
-            space: false, 
-            maxlength: false,
-            showbtn: true, 
-            submit: function () {
-            },
-            cancel: function () {
-            },
-            tmpl: '<span qe="scope"><span><input type="text" qe="input"/></span><span><button qe="submit" >Okey</button><button qe="cancel">Cancel</button></span></span>'
-        },
-
-        init: function (dom, options) {
-            if (!this.check(dom, options)) {
-                return;
-            }
-            this.options = $.extend({}, this.defaults, options);
-            this.dom = dom.hide();
-            this.create();
-            this.initEvent();
-            return this.quickEdit;
-        },
-
-        check: function (dom) {
-            if (this.quickEdit) {
-                if (this.options.blur) {
-                    this.options.autosubmit && this.submit() || this.cancel();
-                } else {
-                    this.hook = dom;
-                    return;
-                }
-            }
-            return true;
-        },
-
-        select: function (type) {
-            return this.options.prefix.replace('?', type);
-        },
-
-        create: function () {
-            var oldvalue = this.options.oldvalue;
-            if (!oldvalue.length) {
-                oldvalue = this.dom.text();
-            }
-            var quickEdit = $(this.options.tmpl).eq(0);
-            quickEdit.find(this.select('input')).val(oldvalue);
-            if (!this.options.showbtn) {
-                this.options.blur = true;
-                this.options.autosubmit = true;
-                quickEdit.find(this.select('submit')).remove();
-                quickEdit.find(this.select('cancel')).remove();
-            }
-            this.quickEdit = quickEdit;
-        },
-
-        submit: function () {
-            var self = this,
-                options = self.options;
-
-            var newvalue = $.trim($(this.select('input'), self.quickEdit).val());
-            if ((newvalue.length || options.space) && (newvalue != options.oldvalue || !options.checkold)) {
-                if ($.isFunction(options.submit)) {
-                    if (options.submit(self.dom, newvalue) !== false) {
-                        self.cancel(true);
-                    }
-                }
-            } else {
-                self.cancel();
-            }
-        },
-
-        cancel: function (nocall) {
-            var self = this;
-            if (!self.quickEdit) {
-                return;
-            }
-            var cancel = function () {
-                self.quickEdit.remove();
-                self.quickEdit = undefined;
-                self.dom.show();
-                if (self.hook) {
-                    self.hook.trigger('click');
-                    self.hook = undefined;
-                }
-            };
-            if (!nocall && $.isFunction(this.options.cancel)) {
-                if (this.options.cancel(this.dom) !== false && this.quickEdit) {
-                    cancel();
-                }
-            } else {
-                cancel();
-            }
-        },
-
-        initEvent: function () {
-            var self = this,
-                scope = self.quickEdit;
-
-            scope.off('click.qe');
-            scope.on('click.qe', self.select('submit'), function (e) {
-                self.submit();
-                e.stopPropagation();
-            });
-
-            scope.on('click.qe', self.select('cancel'), function (e) {
-                self.cancel();
-                e.stopPropagation();
-            });
-
-            scope.on('click.qe', self.select('input'), function (e) {
-                e.stopPropagation();
-            });
-
-            scope.off('keydown.edit').on('keydown.edit', self.select('input'), function (e) {
-                if (e.keyCode == 13) {
-                    self.submit();
-                    return false;
-                }
-                if (self.options.maxlength && $(this).val().length > self.options.maxlength) {
-                    $(this).val($(this).val().substr(0, self.options.maxlength));
-                }
-            });
-
-            $(document).off('click.qe').on('click.qe', function (e) {
-                if (e.target == self.dom.get(0) || $(e.target).is(self.select('scope')) || $(e.target).parents(self.select('scope')).length) {
-                    return;
-                }
-                if (self.options.blur) {
-                    self.options.autosubmit && self.submit() || self.cancel();
-                }
-            });
-        }
-    };
-
-    $.fn.quickEdit = function (arg1, arg2) {
-        if (typeof arg1 == 'string') {
-            switch (arg1) {
-                case 'submit':
-                    $.quickEdit.submit();
-                    break;
-                case 'cancel':
-                    $.quickEdit.cancel();
-                    break;
-                case 'create':
-                    return $.quickEdit.init($(this), arg2);
-                    break;
-            }
-        } else {
-            $(this).off('dblclick.qe');
-            $(this).on('dblclick.qe', function () {
-                var edit = $.quickEdit.init($(this), arg1);
-                if (edit) {
-                    $(this).after(edit);
-                    $('input', edit)[0].select();
-                }
-            });
-        }
-    };
-})(jQuery);
-
 (function($){
-    /* scan individual table and set "cellPos" data in the form { left: x-coord, top: y-coord } */
     function scanTable( $table ) {
         var m = [];
         $table.children( "tr" ).each( function( y, row ) {
@@ -416,10 +307,10 @@
                     tx, ty;
                 cspan = cspan ? cspan : 1;
                 rspan = rspan ? rspan : 1;
-                for( ; m[y] && m[y][x]; ++x );  //skip already occupied cells in current row
-                for( tx = x; tx < x + cspan; ++tx ) {  //mark matrix elements occupied by current cell with true
+                for( ; m[y] && m[y][x]; ++x );
+                for( tx = x; tx < x + cspan; ++tx ) {
                     for( ty = y; ty < y + rspan; ++ty ) {
-                        if( !m[ty] ) {  //fill missing rows
+                        if( !m[ty] ) {
                             m[ty] = [];
                         }
                         m[ty][tx] = true;
@@ -430,8 +321,6 @@
             } );
         } );
     };
-
-    /* plugin */
     $.fn.cellPos = function( rescan ) {
         var $cell = this.first(),
             pos = $cell.data( "cellPos" );
